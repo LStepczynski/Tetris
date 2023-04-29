@@ -1,49 +1,59 @@
 import pygame as pg
+import random
+
+class Colors():
+  RED = (255, 0, 0)
+  GREEN = (0, 255, 0)
+  BLUE = (0, 0, 255)
+  YELLOW = (255, 255, 0)
+  BLACK = (0, 0, 0)
+  WHITE = (255, 255, 255)
+  MAGENTA = (255, 0, 255)
+  CYAN = (0, 255, 255)
+  GRAY = (128, 128, 128)
+  ORANGE = (255, 165, 0)
+  PURPLE = (128, 0, 128)
+  BROWN = (165, 42, 42)
+  PINK = (255, 192, 203)
+  GOLD = (255, 215, 0)
+  SILVER = (192, 192, 192)
+  BEIGE = (245, 245, 220)
 
 class Values():
     """Class that stores all the basic information"""
+    block_on_screen = False
+    
     class Cooldown():
         PUSH_DOWN_COOLDOWN = 0.5
-    
+        PUSH_SIDE_COOLDOWN = 0.2
+
     class Game_properties():
-        BLOCK_SIZE = 50
+        BLOCK_SIZE = 30
         WIDTH = BLOCK_SIZE * 10
         HEIGHT = BLOCK_SIZE * 20
         TICK_RATE = 30
         TITLE = 'Tetris by LSTEP'
-    
-    class Colors():
-        RED = (255, 0, 0)
-        GREEN = (0, 255, 0)
-        BLUE = (0, 0, 255)
-        YELLOW = (255, 255, 0)
-        BLACK = (0, 0, 0)
-        WHITE = (255, 255, 255)
-        MAGENTA = (255, 0, 255)
-        CYAN = (0, 255, 255)
-        GRAY = (128, 128, 128)
-        ORANGE = (255, 165, 0)
-        PURPLE = (128, 0, 128)
-        BROWN = (165, 42, 42)
-        PINK = (255, 192, 203)
-        GOLD = (255, 215, 0)
-        SILVER = (192, 192, 192)
-        BEIGE = (245, 245, 220)
-
+        BACKGROUND_COLOR = Colors.BEIGE
 
 class Timer():
     push_down = -1
+    push_side = -1
+
     def count():
         if Timer.push_down != -1:
             Timer.push_down += 1
-        
         if Timer.push_down / Values.Game_properties.TICK_RATE == Values.Cooldown.PUSH_DOWN_COOLDOWN:
             Timer.push_down = -1
+
+        if Timer.push_side != -1:
+            Timer.push_side += 1
+        if Timer.push_side / Values.Game_properties.TICK_RATE == Values.Cooldown.PUSH_SIDE_COOLDOWN:
+            Timer.push_side = -1
 
 
 class Block():
     blocks = []
-
+  
     def __init__(self, x, y, color):
         self.x = x
         self.y = y
@@ -51,28 +61,66 @@ class Block():
         self.object = pg.Rect(self.x, self.y, Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE)
 
     def display(self):
-        Game.WINDOW.fill(Values.Colors.BLACK)
         self.object = pg.Rect(self.x, self.y, Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE)
         pg.draw.rect(Game.WINDOW, self.color, self.object)
 
-        pg.display.update()
-    
     def push_down(self):
-        if Timer.push_down == -1:
-            self.y += Values.Game_properties.BLOCK_SIZE
-            Timer.push_down = 0
-            
-    
+        self.y += Values.Game_properties.BLOCK_SIZE
+
+    def push_side(self, side):
+        if side == 'left':
+            self.x -= Values.Game_properties.BLOCK_SIZE
+        else:
+            self.x += Values.Game_properties.BLOCK_SIZE
+        
+class Block_types():
+      block_types = [
+        [Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE, Colors.GOLD),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.GOLD),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 3, Colors.GOLD),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 4, Colors.GOLD)],
+        
+        [Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE, Colors.CYAN),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.CYAN),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 3, Colors.CYAN),
+        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 3, Colors.CYAN)],
+
+        [Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE, Colors.BLUE),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.BLUE),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 3, Colors.BLUE),
+        Block(Values.Game_properties.BLOCK_SIZE * 3, -Values.Game_properties.BLOCK_SIZE * 3, Colors.BLUE)],
+
+        [Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE, Colors.PURPLE),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.PURPLE),
+        Block(Values.Game_properties.BLOCK_SIZE * 3, -Values.Game_properties.BLOCK_SIZE * 2, Colors.PURPLE),
+        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 2, Colors.PURPLE)],
+
+        [Block(Values.Game_properties.BLOCK_SIZE * 3, -Values.Game_properties.BLOCK_SIZE * 2, Colors.GREEN),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.GREEN),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 1, Colors.GREEN),
+        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 1, Colors.GREEN)],
+
+        [Block(Values.Game_properties.BLOCK_SIZE * 3, -Values.Game_properties.BLOCK_SIZE * 1, Colors.RED),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 1, Colors.RED),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.RED),
+        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 2, Colors.RED)],
+
+        [Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 1, Colors.YELLOW),
+        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.YELLOW),
+        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 1, Colors.YELLOW),
+        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 2, Colors.YELLOW)]
+      ]
+
+
 class Game():
     WINDOW = pg.display.set_mode((Values.Game_properties.WIDTH, Values.Game_properties.HEIGHT))
     pg.display.set_caption(Values.Game_properties.TITLE)
 
     def __init__(self):
         pg.init()
-        Block.blocks.append(Block(0, 0, Values.Colors.GOLD))
         self.clock = pg.time.Clock()
         self.run = True
-        
+
         while self.run == True:
             self.clock.tick(Values.Game_properties.TICK_RATE)
             
@@ -80,21 +128,42 @@ class Game():
                 if event.type == pg.QUIT:
                     self.run = False
             
-            Game.push_down()
+            if len(Block.blocks) == 0:
+                Game.add_new_blocks()
+            if Timer.push_down == -1:
+                Game.push_down()
+                Timer.push_down += 1
+            Game.controls()
             Game.visuals()
             Timer.count()
+            
 
-        
     def visuals():
+        Game.WINDOW.fill(Values.Game_properties.BACKGROUND_COLOR)
         for block in Block.blocks:
             block.display()
-    
+
+        pg.display.update()
+
     def push_down():
         for block in Block.blocks:
             block.push_down()
-        
+
+    def add_new_blocks():
+        Block.blocks = Block_types.block_types[random.randint(0,len(Block_types.block_types)-1)]
+        print(Block.blocks)
+
+    def controls():
+        keys_pressed = pg.key.get_pressed()
+        if keys_pressed[pg.K_a] and Timer.push_side == -1:
+            for block in Block.blocks:
+                block.push_side("left")
+            Timer.push_side = 0
+        if keys_pressed[pg.K_d] and Timer.push_side == -1:
+            for block in Block.blocks:
+                block.push_side("right")
+        Timer.push_side = 0
 
 
 if __name__ == "__main__":
     Game()
-        
