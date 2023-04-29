@@ -2,22 +2,22 @@ import pygame as pg
 import random
 
 class Colors():
-  RED = (255, 0, 0)
-  GREEN = (0, 255, 0)
-  BLUE = (0, 0, 255)
-  YELLOW = (255, 255, 0)
-  BLACK = (0, 0, 0)
-  WHITE = (255, 255, 255)
-  MAGENTA = (255, 0, 255)
-  CYAN = (0, 255, 255)
-  GRAY = (128, 128, 128)
-  ORANGE = (255, 165, 0)
-  PURPLE = (128, 0, 128)
-  BROWN = (165, 42, 42)
-  PINK = (255, 192, 203)
-  GOLD = (255, 215, 0)
-  SILVER = (192, 192, 192)
-  BEIGE = (245, 245, 220)
+    RED = (255, 0, 0)
+    GREEN = (0, 255, 0)
+    BLUE = (0, 0, 255)
+    YELLOW = (255, 255, 0)
+    BLACK = (0, 0, 0)
+    WHITE = (255, 255, 255)
+    MAGENTA = (255, 0, 255)
+    CYAN = (0, 255, 255)
+    GRAY = (128, 128, 128)
+    ORANGE = (255, 165, 0)
+    PURPLE = (128, 0, 128)
+    BROWN = (165, 42, 42)
+    PINK = (255, 192, 203)
+    GOLD = (255, 215, 0)
+    SILVER = (192, 192, 192)
+    BEIGE = (245, 245, 220)
 
 class Values():
     """Class that stores all the basic information"""
@@ -26,9 +26,10 @@ class Values():
     class Cooldown():
         PUSH_DOWN_COOLDOWN = 0.5
         PUSH_SIDE_COOLDOWN = 0.2
+        ROTATE_COOLDOWN = 0.3
 
     class Game_properties():
-        BLOCK_SIZE = 30
+        BLOCK_SIZE = 50
         WIDTH = BLOCK_SIZE * 10
         HEIGHT = BLOCK_SIZE * 20
         TICK_RATE = 30
@@ -38,6 +39,7 @@ class Values():
 class Timer():
     push_down = -1
     push_side = -1
+    rotate = -1
 
     def count():
         if Timer.push_down != -1:
@@ -49,10 +51,16 @@ class Timer():
             Timer.push_side += 1
         if Timer.push_side / Values.Game_properties.TICK_RATE == Values.Cooldown.PUSH_SIDE_COOLDOWN:
             Timer.push_side = -1
+        
+        if Timer.rotate != -1:
+            Timer.rotate += 1
+        if Timer.rotate / Values.Game_properties.TICK_RATE == Values.Cooldown.ROTATE_COOLDOWN:
+            Timer.rotate = -1
 
 
 class Block():
-    blocks = []
+    moving_blocks = []
+    static_blocks = []
   
     def __init__(self, x, y, color):
         self.x = x
@@ -72,7 +80,11 @@ class Block():
             self.x -= Values.Game_properties.BLOCK_SIZE
         else:
             self.x += Values.Game_properties.BLOCK_SIZE
+    
+    def rotate(self, side):
+        pass
         
+
 class Block_types():
       block_types = [
         [Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE, Colors.GOLD),
@@ -120,7 +132,7 @@ class Game():
         pg.init()
         self.clock = pg.time.Clock()
         self.run = True
-
+        Game.add_new_blocks()
         while self.run == True:
             self.clock.tick(Values.Game_properties.TICK_RATE)
             
@@ -128,11 +140,11 @@ class Game():
                 if event.type == pg.QUIT:
                     self.run = False
             
-            if len(Block.blocks) == 0:
-                Game.add_new_blocks()
             if Timer.push_down == -1:
                 Game.push_down()
                 Timer.push_down += 1
+            print(len(Block.static_blocks))
+            Game.remove_blocks()
             Game.controls()
             Game.visuals()
             Timer.count()
@@ -140,30 +152,47 @@ class Game():
 
     def visuals():
         Game.WINDOW.fill(Values.Game_properties.BACKGROUND_COLOR)
-        for block in Block.blocks:
+        for block in Block.moving_blocks:
+            block.display()
+        for block in Block.static_blocks:
             block.display()
 
         pg.display.update()
 
     def push_down():
-        for block in Block.blocks:
+        for block in Block.moving_blocks:
             block.push_down()
 
     def add_new_blocks():
-        Block.blocks = Block_types.block_types[random.randint(0,len(Block_types.block_types)-1)]
-        print(Block.blocks)
+        Block.moving_blocks += Block_types.block_types[random.randint(0,len(Block_types.block_types)-1)]
+        print('a')
 
     def controls():
         keys_pressed = pg.key.get_pressed()
         if keys_pressed[pg.K_a] and Timer.push_side == -1:
-            for block in Block.blocks:
+            for block in Block.moving_blocks:
                 block.push_side("left")
             Timer.push_side = 0
         if keys_pressed[pg.K_d] and Timer.push_side == -1:
-            for block in Block.blocks:
+            for block in Block.moving_blocks:
                 block.push_side("right")
-        Timer.push_side = 0
+            Timer.push_side = 0
 
+        if keys_pressed[pg.K_w] and Timer.rotate == -1:
+            for block in Block.moving_blocks:
+                block.rotate("left")
+            Timer.rotate = 0
+        if keys_pressed[pg.K_s] and Timer.rotate == -1:
+            for block in Block.moving_blocks:
+                block.rotate("right")
+            Timer.rotate = 0
+
+    def remove_blocks():
+        for block in Block.moving_blocks:
+            if block.y == Values.Game_properties.HEIGHT - Values.Game_properties.BLOCK_SIZE:
+                Block.static_blocks += Block.moving_blocks
+                Block.moving_blocks.clear()
+                Game.add_new_blocks()
 
 if __name__ == "__main__":
     Game()
