@@ -76,6 +76,14 @@ class Block():
 
     def push_down(self):
         self.y += Values.Game_properties.BLOCK_SIZE
+    
+    def should_fall(self):
+        if self.y + Values.Game_properties.BLOCK_SIZE == Values.Game_properties.HEIGHT:
+            return True
+        for block in Block.static_blocks:
+            if self.y + Values.Game_properties.BLOCK_SIZE == block.y and self.x == block.x:
+                return True
+        return False
 
     def push_side(self, side):
         if side == 'left':
@@ -145,7 +153,7 @@ class Game():
             if Timer.push_down == -1:
                 Game.push_down()
                 Timer.push_down += 1
-            print(Block_types.block_types[0][0].y)
+
             Game.remove_blocks()
             Game.controls()
             Game.visuals()
@@ -190,7 +198,7 @@ class Game():
 
     def remove_blocks():
         for block in Block.moving_blocks:
-            if block.y == Values.Game_properties.HEIGHT - Values.Game_properties.BLOCK_SIZE:
+            if block.should_fall():
                 Block.static_blocks += Block.moving_blocks 
                 Block.moving_blocks = []
                 Game.add_new_blocks()
