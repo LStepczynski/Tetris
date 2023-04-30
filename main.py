@@ -1,5 +1,7 @@
 import pygame as pg
-import random
+import copy
+from random import randint
+
 
 class Colors():
     RED = (255, 0, 0)
@@ -24,7 +26,7 @@ class Values():
     block_on_screen = False
     
     class Cooldown():
-        PUSH_DOWN_COOLDOWN = 0.5
+        PUSH_DOWN_COOLDOWN = 0.2
         PUSH_SIDE_COOLDOWN = 0.2
         ROTATE_COOLDOWN = 0.3
 
@@ -143,7 +145,7 @@ class Game():
             if Timer.push_down == -1:
                 Game.push_down()
                 Timer.push_down += 1
-            print(len(Block.static_blocks))
+            print(Block_types.block_types[0][0].y)
             Game.remove_blocks()
             Game.controls()
             Game.visuals()
@@ -164,8 +166,7 @@ class Game():
             block.push_down()
 
     def add_new_blocks():
-        Block.moving_blocks += Block_types.block_types[random.randint(0,len(Block_types.block_types)-1)]
-        print('a')
+        Block.moving_blocks = copy.deepcopy(Block_types.block_types[randint(0, len(Block_types.block_types)-1)])
 
     def controls():
         keys_pressed = pg.key.get_pressed()
@@ -190,9 +191,10 @@ class Game():
     def remove_blocks():
         for block in Block.moving_blocks:
             if block.y == Values.Game_properties.HEIGHT - Values.Game_properties.BLOCK_SIZE:
-                Block.static_blocks += Block.moving_blocks
-                Block.moving_blocks.clear()
+                Block.static_blocks += Block.moving_blocks 
+                Block.moving_blocks = []
                 Game.add_new_blocks()
+                break
 
 if __name__ == "__main__":
     Game()
