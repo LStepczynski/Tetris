@@ -25,8 +25,12 @@ class Values():
     """Class that stores all the basic information"""
     block_on_screen = False
     
+    class Sounds():
+        pg.mixer.init(44100, -16,2,2048)
+        TETRIS_MUSIC = pg.mixer.Sound('Tetris_theme.mp3')
+
     class Cooldown():
-        PUSH_DOWN_COOLDOWN = 0.2
+        PUSH_DOWN_COOLDOWN = 0.1
         PUSH_SIDE_COOLDOWN = 0.2
         ROTATE_COOLDOWN = 0.3
 
@@ -140,6 +144,8 @@ class Game():
 
     def __init__(self):
         pg.init()
+        Values.Sounds.TETRIS_MUSIC.set_volume(0.1)
+        Values.Sounds.TETRIS_MUSIC.play(-1)
         self.clock = pg.time.Clock()
         self.run = True
         Game.add_new_blocks()
@@ -153,9 +159,10 @@ class Game():
             if Timer.push_down == -1:
                 Game.push_down()
                 Timer.push_down += 1
-
-            Game.remove_blocks()
+            
             Game.controls()
+            Game.remove_blocks()
+            Game.remove_row()
             Game.visuals()
             Timer.count()
             
@@ -174,7 +181,7 @@ class Game():
             block.push_down()
 
     def add_new_blocks():
-        Block.moving_blocks = copy.deepcopy(Block_types.block_types[randint(0, len(Block_types.block_types)-1)])
+        Block.moving_blocks = copy.deepcopy(Block_types.block_types[randint(0, 0)])#len(Block_types.block_types)-1
 
     def controls():
         keys_pressed = pg.key.get_pressed()
@@ -203,6 +210,27 @@ class Game():
                 Block.moving_blocks = []
                 Game.add_new_blocks()
                 break
+
+    def remove_row():
+        y_values = [Values.Game_properties.BLOCK_SIZE * value for value in range(20)]
+        blocks_to_remove = []
+        
+        for y_value in y_values:
+            num_of_blocks = 0
+            
+            for block in Block.static_blocks:
+                if block.y == y_value:
+                    num_of_blocks += 1
+                    
+            if num_of_blocks == 10:
+                for block in Block.static_blocks:
+                    if block.y == y_value:
+                        blocks_to_remove.append(block)
+
+        for block in blocks_to_remove:
+            Block.static_blocks.remove(block)
+            
+
 
 if __name__ == "__main__":
     Game()
