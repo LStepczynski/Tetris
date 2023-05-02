@@ -30,7 +30,7 @@ class Values():
         TETRIS_MUSIC = pg.mixer.Sound('Tetris_theme.mp3')
 
     class Cooldown():
-        PUSH_DOWN_COOLDOWN = 0.1
+        PUSH_DOWN_COOLDOWN = 0.2
         PUSH_SIDE_COOLDOWN = 0.2
         ROTATE_COOLDOWN = 0.3
 
@@ -181,7 +181,7 @@ class Game():
             block.push_down()
 
     def add_new_blocks():
-        Block.moving_blocks = copy.deepcopy(Block_types.block_types[randint(0, 0)])#len(Block_types.block_types)-1
+        Block.moving_blocks = copy.deepcopy(Block_types.block_types[randint(0, len(Block_types.block_types)-1)])
 
     def controls():
         keys_pressed = pg.key.get_pressed()
@@ -212,23 +212,29 @@ class Game():
                 break
 
     def remove_row():
-        y_values = [Values.Game_properties.BLOCK_SIZE * value for value in range(20)]
-        blocks_to_remove = []
-        
+        y_values = list(reversed([Values.Game_properties.BLOCK_SIZE * value for value in range(20)]))
+
         for y_value in y_values:
+            blocks_to_remove = []
             num_of_blocks = 0
-            
+
             for block in Block.static_blocks:
                 if block.y == y_value:
                     num_of_blocks += 1
-                    
+
             if num_of_blocks == 10:
                 for block in Block.static_blocks:
                     if block.y == y_value:
                         blocks_to_remove.append(block)
 
-        for block in blocks_to_remove:
-            Block.static_blocks.remove(block)
+            for block in blocks_to_remove:
+                    Block.static_blocks.remove(block)
+
+            if blocks_to_remove:
+                for block in Block.static_blocks:
+                    if block.y < y_value:
+                        block.y += Values.Game_properties.BLOCK_SIZE
+
             
 
 
