@@ -1,6 +1,8 @@
 import pygame as pg
 import copy
-from random import randint
+import random
+import math
+import time
 
 
 class Colors():
@@ -30,17 +32,18 @@ class Values():
         TETRIS_MUSIC = pg.mixer.Sound('Tetris_theme.mp3')
 
     class Cooldown():
-        PUSH_DOWN_COOLDOWN = 0.2
+        PUSH_DOWN_COOLDOWN = 0.3
         PUSH_SIDE_COOLDOWN = 0.2
         ROTATE_COOLDOWN = 0.3
 
     class Game_properties():
         BLOCK_SIZE = 50
-        WIDTH = BLOCK_SIZE * 10
+        WIDTH = BLOCK_SIZE * 18
         HEIGHT = BLOCK_SIZE * 20
         TICK_RATE = 30
         TITLE = 'Tetris by LSTEP'
         BACKGROUND_COLOR = Colors.BEIGE
+        ROTATE_STAGE = 1
 
 class Timer():
     push_down = -1
@@ -68,10 +71,11 @@ class Block():
     moving_blocks = []
     static_blocks = []
   
-    def __init__(self, x, y, color):
+    def __init__(self, x, y, color, index):
         self.x = x
         self.y = y
         self.color = color
+        self.index = index
         self.object = pg.Rect(self.x, self.y, Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE)
 
     def display(self):
@@ -95,47 +99,29 @@ class Block():
         else:
             self.x += Values.Game_properties.BLOCK_SIZE
     
-    def rotate(self, side):
-        pass
+
         
 
 class Block_types():
       block_types = [
-        [Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE, Colors.GOLD),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.GOLD),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 3, Colors.GOLD),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 4, Colors.GOLD)],
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.CYAN, index) for pos_x, pos_y, index in zip([8 for _ in range(4)], [value+1 for value in range(4)], [value+1 for value in range(4)])],
         
-        [Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE, Colors.CYAN),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.CYAN),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 3, Colors.CYAN),
-        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 3, Colors.CYAN)],
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.BLUE, index) for pos_x, pos_y, index in zip([8, 8, 8, 9], [1, 2, 3, 3], [value+1 for value in range(4)])],
 
-        [Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE, Colors.BLUE),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.BLUE),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 3, Colors.BLUE),
-        Block(Values.Game_properties.BLOCK_SIZE * 3, -Values.Game_properties.BLOCK_SIZE * 3, Colors.BLUE)],
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.ORANGE, index) for pos_x, pos_y, index in zip([8, 8, 8, 7], [1, 2, 3, 3], [value+1 for value in range(4)])],
 
-        [Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE, Colors.PURPLE),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.PURPLE),
-        Block(Values.Game_properties.BLOCK_SIZE * 3, -Values.Game_properties.BLOCK_SIZE * 2, Colors.PURPLE),
-        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 2, Colors.PURPLE)],
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.PURPLE, index) for pos_x, pos_y, index in zip([8, 8, 7, 9], [1, 2, 2, 2], [value+1 for value in range(4)])],
 
-        [Block(Values.Game_properties.BLOCK_SIZE * 3, -Values.Game_properties.BLOCK_SIZE * 2, Colors.GREEN),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.GREEN),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 1, Colors.GREEN),
-        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 1, Colors.GREEN)],
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.RED, index) for pos_x, pos_y, index in zip([7, 8, 8, 9], [2, 2, 1, 1], [value+1 for value in range(4)])],
 
-        [Block(Values.Game_properties.BLOCK_SIZE * 3, -Values.Game_properties.BLOCK_SIZE * 1, Colors.RED),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 1, Colors.RED),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.RED),
-        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 2, Colors.RED)],
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.GREEN, index) for pos_x, pos_y, index in zip([7, 8, 8, 9], [1, 1, 2, 2], [value+1 for value in range(4)])],
 
-        [Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 1, Colors.YELLOW),
-        Block(Values.Game_properties.BLOCK_SIZE * 4, -Values.Game_properties.BLOCK_SIZE * 2, Colors.YELLOW),
-        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 1, Colors.YELLOW),
-        Block(Values.Game_properties.BLOCK_SIZE * 5, -Values.Game_properties.BLOCK_SIZE * 2, Colors.YELLOW)]
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.YELLOW, index) for pos_x, pos_y, index in zip([8, 8, 9, 9], [1, 2, 1, 2], [value+1 for value in range(4)])]
       ]
+
+class Gui():
+    left_square = pg.Rect(0,0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
+    right_square = pg.Rect(Values.Game_properties.BLOCK_SIZE * 14 , 0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
 
 
 class Game():
@@ -169,6 +155,10 @@ class Game():
 
     def visuals():
         Game.WINDOW.fill(Values.Game_properties.BACKGROUND_COLOR)
+
+        pg.draw.rect(Game.WINDOW, Colors.BLACK, Gui.left_square)
+        pg.draw.rect(Game.WINDOW, Colors.BLACK, Gui.right_square)
+
         for block in Block.moving_blocks:
             block.display()
         for block in Block.static_blocks:
@@ -181,7 +171,9 @@ class Game():
             block.push_down()
 
     def add_new_blocks():
-        Block.moving_blocks = copy.deepcopy(Block_types.block_types[randint(0, len(Block_types.block_types)-1)])
+        random.seed(time.time())
+        Block.moving_blocks = copy.deepcopy(Block_types.block_types[random.randint(0, len(Block_types.block_types)-1)])
+        Values.Game_properties.ROTATE_STAGE = 1
 
     def controls():
         keys_pressed = pg.key.get_pressed()
@@ -193,14 +185,11 @@ class Game():
             for block in Block.moving_blocks:
                 block.push_side("right")
             Timer.push_side = 0
+        if keys_pressed[pg.K_s] and Timer.push_down != -1:
+            Timer.push_down = -1
 
         if keys_pressed[pg.K_w] and Timer.rotate == -1:
-            for block in Block.moving_blocks:
-                block.rotate("left")
-            Timer.rotate = 0
-        if keys_pressed[pg.K_s] and Timer.rotate == -1:
-            for block in Block.moving_blocks:
-                block.rotate("right")
+            Game.rotate()
             Timer.rotate = 0
 
     def remove_blocks():
@@ -235,8 +224,33 @@ class Game():
                     if block.y < y_value:
                         block.y += Values.Game_properties.BLOCK_SIZE
 
-            
+    def rotate():
+        if Block.moving_blocks[0].color != Colors.YELLOW:
+            # Define the coordinates of the block
+            blocks = []
+            for block in Block.moving_blocks:
+                blocks.append((block.x, block.y))
 
+            # Define the center of rotation
+            center = blocks[1]
+
+            # Define the angle of rotation in radians
+            angle = math.radians(90)
+
+            # Translate the block to the origin
+            translated_block = [(x - center[0], y - center[1]) for x, y in blocks]
+
+            # Rotate the block around the origin
+            rotated_blocks = [(-y, x) for x, y in translated_block]
+
+            # Translate the block back to its original position
+            final_block = [(x + center[0], y + center[1]) for x, y in rotated_blocks]
+
+            for block, index in zip(final_block, range(4)):
+                Block.moving_blocks[index].x = block[0]
+                Block.moving_blocks[index].y = block[1]
+
+    
 
 if __name__ == "__main__":
     Game()
