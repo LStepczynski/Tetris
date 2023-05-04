@@ -1,7 +1,6 @@
 import pygame as pg
 import copy
 import random
-import math
 import time
 
 
@@ -32,18 +31,34 @@ class Values():
         TETRIS_MUSIC = pg.mixer.Sound('Tetris_theme.mp3')
 
     class Cooldown():
-        PUSH_DOWN_COOLDOWN = 0.3
-        PUSH_SIDE_COOLDOWN = 0.2
+        PUSH_DOWN_COOLDOWN = 0.5
+        PUSH_SIDE_COOLDOWN = 0.1
         ROTATE_COOLDOWN = 0.3
 
     class Game_properties():
-        BLOCK_SIZE = 50
+        BLOCK_SIZE = 60
         WIDTH = BLOCK_SIZE * 18
         HEIGHT = BLOCK_SIZE * 20
         TICK_RATE = 30
         TITLE = 'Tetris by LSTEP'
         BACKGROUND_COLOR = Colors.BEIGE
-        ROTATE_STAGE = 1
+        score = 0
+
+class Fonts():
+    b_size = Values.Game_properties.BLOCK_SIZE
+    pg.font.init()
+    SCORE = pg.font.SysFont('Tetris', Values.Game_properties.BLOCK_SIZE)
+    
+    TITLE_SCORE = SCORE.render("SCORE", 1, Colors.WHITE)
+    score = SCORE.render(str(Values.Game_properties.score), 1, Colors.WHITE)
+    HOLD = SCORE.render('HOLD', 1, Colors.WHITE)
+    NEXT = SCORE.render('NEXT', 1, Colors.WHITE)
+
+    texts = [(TITLE_SCORE, (b_size/6,b_size)), [score, (b_size/6, b_size*2)]]
+
+    def update_score():
+        score = Fonts.SCORE.render(str(Values.Game_properties.score), 1, Colors.WHITE)
+        Fonts.texts[1][0] = score
 
 class Timer():
     push_down = -1
@@ -144,7 +159,10 @@ class Game():
             
             if Timer.push_down == -1:
                 Game.push_down()
+                Values.Game_properties.score += 5
+                Fonts.update_score()
                 Timer.push_down += 1
+
             
             Game.controls()
             Game.remove_blocks()
@@ -155,9 +173,12 @@ class Game():
 
     def visuals():
         Game.WINDOW.fill(Values.Game_properties.BACKGROUND_COLOR)
-
+      
         pg.draw.rect(Game.WINDOW, Colors.BLACK, Gui.left_square)
         pg.draw.rect(Game.WINDOW, Colors.BLACK, Gui.right_square)
+
+        for text, coordinates in Fonts.texts:
+            Game.WINDOW.blit(text, coordinates)
 
         for block in Block.moving_blocks:
             block.display()
@@ -179,14 +200,19 @@ class Game():
         keys_pressed = pg.key.get_pressed()
         if keys_pressed[pg.K_a] and Timer.push_side == -1:
             for block in Block.moving_blocks:
+                if block.x - Values.Game_properties.BLOCK_SIZE < Values.Game_properties.BLOCK_SIZE * 4:
+                    break
                 block.push_side("left")
             Timer.push_side = 0
         if keys_pressed[pg.K_d] and Timer.push_side == -1:
-            for block in Block.moving_blocks:
+            for block in reversed(Block.moving_blocks):
+                if block.x + Values.Game_properties.BLOCK_SIZE > Values.Game_properties.BLOCK_SIZE * 13:
+                    break    
                 block.push_side("right")
             Timer.push_side = 0
         if keys_pressed[pg.K_s] and Timer.push_down != -1:
             Timer.push_down = -1
+            Values.Game_properties.score += 5
 
         if keys_pressed[pg.K_w] and Timer.rotate == -1:
             Game.rotate()
@@ -233,9 +259,6 @@ class Game():
 
             # Define the center of rotation
             center = blocks[1]
-
-            # Define the angle of rotation in radians
-            angle = math.radians(90)
 
             # Translate the block to the origin
             translated_block = [(x - center[0], y - center[1]) for x, y in blocks]
