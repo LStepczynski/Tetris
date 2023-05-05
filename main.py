@@ -32,7 +32,7 @@ class Values():
 
     class Cooldown():
         """Class that stores all the cooldown values"""
-        PUSH_DOWN_COOLDOWN = 0.5
+        PUSH_DOWN_COOLDOWN = 0.7
         PUSH_SIDE_COOLDOWN = 0.1
         ROTATE_COOLDOWN = 0.3
         SWAP_COOLDOWN = 1
@@ -76,7 +76,7 @@ class Timer():
         """Method that counts and resets the cooldowns"""
         if Timer.push_down != -1:
             Timer.push_down += 1
-        if Timer.push_down / Values.Game_properties.TICK_RATE == Values.Cooldown.PUSH_DOWN_COOLDOWN:
+        if Timer.push_down / Values.Game_properties.TICK_RATE >= Values.Cooldown.PUSH_DOWN_COOLDOWN:
             Timer.push_down = -1
 
         if Timer.push_side != -1:
@@ -177,6 +177,7 @@ class Game():
         Values.Sounds.TETRIS_MUSIC.play(-1)
         self.clock = pg.time.Clock()
         self.run = True
+        Block.next_blocks = copy.deepcopy(Block_types.block_types[random.randint(0, len(Block_types.block_types)-1)])
         Game.add_new_blocks()
         while self.run == True:
             self.clock.tick(Values.Game_properties.TICK_RATE)
@@ -227,11 +228,17 @@ class Game():
     def add_new_blocks(index=None):
         """Adds one of the seven blocks to the game, can be randomized or a specific block"""
         if index == None:
-            random.seed(time.time())
-            Block.moving_blocks = copy.deepcopy(Block_types.block_types[random.randint(0, len(Block_types.block_types)-1)])
+            b_size = Values.Game_properties.BLOCK_SIZE
+
+            Block.moving_blocks = copy.deepcopy(Block_types.block_types[int(Block.next_blocks[0].block_type)-1]) # Places block of the same type as the one in next_blocks on the board
+            Block.next_blocks = []
+            Block.next_blocks = copy.deepcopy(Block_types.block_types[random.randint(0, len(Block_types.block_types)-1)]) # Randomizes a block to add to the next_blocks
+            for block in Block.next_blocks: # Takes the blocks from next_blocks and puts them in the same place
+                block.x, block.y = (b_size*15, b_size*2)
+            Game.recreate_shape(Block.next_blocks) # Recreates the shape of the block
+
         else:
             Block.moving_blocks = copy.deepcopy(Block_types.block_types[index])
-
 
     def controls():
         """Gathers information about keys pressed and runs the associated functions"""
@@ -294,6 +301,7 @@ class Game():
 
             for block in blocks_to_remove: # Removes the blocks from the static list
                     Block.static_blocks.remove(block)
+                    Values.Game_properties.score += 50
 
             if blocks_to_remove: # If The Y-Value of a block is lower than the Y-value of the row it moves the block down
                 for block in Block.static_blocks:
@@ -335,6 +343,45 @@ class Game():
                     return False
         return True
 
+    def recreate_shape(container):
+        b_size = Values.Game_properties.BLOCK_SIZE
+        match container[0].block_type: # Translates the blocks to their shapes
+            case '1':
+                for block, coordinates in zip(container, [(b_size*0, b_size*0), (b_size*0, b_size*1), (b_size*0, b_size*2), (b_size*0, b_size*3)]):
+                    x, y = coordinates
+                    block.x += x
+                    block.y += y
+            case '2':
+                for block, coordinates in zip(container, [(b_size*1, b_size*0), (b_size*1, b_size*1), (b_size*1, b_size*2), (b_size*0, b_size*2)]):
+                    x, y = coordinates
+                    block.x += x
+                    block.y += y
+            case '3':
+                for block, coordinates in zip(container, [(b_size*0, b_size*0), (b_size*0, b_size*1), (b_size*0, b_size*2), (b_size*1, b_size*2)]):
+                    x, y = coordinates
+                    block.x += x
+                    block.y += y
+            case '4':
+                for block, coordinates in zip(container, [(b_size*0, b_size*0), (b_size*0, b_size*1), (b_size*0, b_size*2), (b_size*1, b_size*1)]):
+                    x, y = coordinates
+                    block.x += x
+                    block.y += y
+            case '5':
+                for block, coordinates in zip(container, [(b_size*1, b_size*0), (b_size*0, b_size*1), (b_size*1, b_size*1), (b_size*0, b_size*2)]):
+                    x, y = coordinates
+                    block.x += x
+                    block.y += y
+            case '6':
+                for block, coordinates in zip(container, [(b_size*0, b_size*0), (b_size*0, b_size*1), (b_size*1, b_size*1), (b_size*1, b_size*2)]):
+                    x, y = coordinates
+                    block.x += x
+                    block.y += y
+            case '7':
+                for block, coordinates in zip(container, [(b_size*0, b_size*1), (b_size*1, b_size*1), (b_size*0, b_size*2), (b_size*1, b_size*2)]):
+                    x, y = coordinates
+                    block.x += x
+                    block.y += y
+
     def swap():
         """Swaps the blocks between moving and holded list"""
         temporary = []
@@ -353,42 +400,7 @@ class Game():
             block.x = Values.Game_properties.BLOCK_SIZE
             block.y = Values.Game_properties.BLOCK_SIZE * 12
 
-        match Block.holded_blocks[0].block_type: # Translates the blocks to their shapes
-            case '1':
-                for block, coordinates in zip(Block.holded_blocks, [(b_size*0, b_size*0), (b_size*0, b_size*1), (b_size*0, b_size*2), (b_size*0, b_size*3)]):
-                    x, y = coordinates
-                    block.x += x
-                    block.y += y
-            case '2':
-                for block, coordinates in zip(Block.holded_blocks, [(b_size*0, b_size*0), (b_size*0, b_size*1), (b_size*0, b_size*2), (b_size*1, b_size*2)]):
-                    x, y = coordinates
-                    block.x += x
-                    block.y += y
-            case '3':
-                for block, coordinates in zip(Block.holded_blocks, [(b_size*1, b_size*0), (b_size*1, b_size*1), (b_size*1, b_size*2), (b_size*0, b_size*2)]):
-                    x, y = coordinates
-                    block.x += x
-                    block.y += y
-            case '4':
-                for block, coordinates in zip(Block.holded_blocks, [(b_size*0, b_size*0), (b_size*0, b_size*1), (b_size*0, b_size*2), (b_size*1, b_size*1)]):
-                    x, y = coordinates
-                    block.x += x
-                    block.y += y
-            case '5':
-                for block, coordinates in zip(Block.holded_blocks, [(b_size*1, b_size*0), (b_size*0, b_size*1), (b_size*1, b_size*1), (b_size*0, b_size*2)]):
-                    x, y = coordinates
-                    block.x += x
-                    block.y += y
-            case '6':
-                for block, coordinates in zip(Block.holded_blocks, [(b_size*0, b_size*0), (b_size*0, b_size*1), (b_size*1, b_size*1), (b_size*1, b_size*2)]):
-                    x, y = coordinates
-                    block.x += x
-                    block.y += y
-            case '7':
-                for block, coordinates in zip(Block.holded_blocks, [(b_size*0, b_size*1), (b_size*1, b_size*1), (b_size*0, b_size*2), (b_size*1, b_size*2)]):
-                    x, y = coordinates
-                    block.x += x
-                    block.y += y
+        Game.recreate_shape(Block.holded_blocks)
 
         if len(Block.moving_blocks) == 0: # If moving blocks is empty it adds blocks to it
             Game.add_new_blocks()
