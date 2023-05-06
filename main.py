@@ -46,24 +46,29 @@ class Values():
         TITLE = 'Tetris by LSTEP'
         BACKGROUND_COLOR = Colors.BEIGE
         score = 0
+        level = 0
 
 class Fonts():
     """Class that stores all the font related information"""
     b_size = Values.Game_properties.BLOCK_SIZE
     pg.font.init()
-    SCORE = pg.font.SysFont('Tetris', Values.Game_properties.BLOCK_SIZE)
+    TETRIS_FONT = pg.font.SysFont('Tetris', Values.Game_properties.BLOCK_SIZE)
     
-    TITLE_SCORE = SCORE.render("SCORE", 1, Colors.WHITE)
-    score = SCORE.render(str(Values.Game_properties.score), 1, Colors.WHITE)
-    HOLD = SCORE.render('HOLD', 1, Colors.WHITE)
-    NEXT = SCORE.render('NEXT', 1, Colors.WHITE)
+    TITLE_SCORE = TETRIS_FONT.render("SCORE", 1, Colors.WHITE)
+    score = TETRIS_FONT.render(str(Values.Game_properties.score), 1, Colors.WHITE)
+    HOLD = TETRIS_FONT.render('HOLD', 1, Colors.WHITE)
+    NEXT = TETRIS_FONT.render('NEXT', 1, Colors.WHITE)
+    TITLE_LEVEL = TETRIS_FONT.render('LEVEL', 1, Colors.WHITE)
+    level = TETRIS_FONT.render(str(Values.Game_properties.level), 1, Colors.GOLD)
 
-    texts = [(TITLE_SCORE, (b_size/6,b_size*2)), [score, (b_size/6, b_size*3.5)], (HOLD, (b_size/2, b_size*10)), (NEXT, (b_size*14 + b_size/2, b_size))]
+    texts = [(TITLE_SCORE, (b_size/6,b_size*2)), [score, (b_size/6, b_size*3.5)], (HOLD, (b_size/2, b_size*10)), (NEXT, (b_size*14 + b_size/2, b_size)), (TITLE_LEVEL, (b_size*14 + b_size/2, b_size*10)), [level, (b_size*15 + b_size*0.75, b_size*12)]]
 
-    def update_score():
-        """Method that updates the score on the screen"""
-        score = Fonts.SCORE.render(str(Values.Game_properties.score), 1, Colors.WHITE)
+    def update_text():
+        """Method that updates text on the screen"""
+        score = Fonts.TETRIS_FONT.render(str(Values.Game_properties.score), 1, Colors.WHITE)
         Fonts.texts[1][0] = score
+        level = Fonts.TETRIS_FONT.render(str(Values.Game_properties.level), 1, Colors.GOLD)
+        Fonts.texts[5][0] = level
 
 class Timer():
     """Class that tracks all the cooldowns in the game"""
@@ -189,12 +194,13 @@ class Game():
             if Timer.push_down == -1: #Pushes the blocks down when the timer reaches -1
                 Game.push_down()
                 Values.Game_properties.score += 5
-                Fonts.update_score()
+                Fonts.update_text()
                 Timer.push_down = 0
 
             Game.controls()
             Game.remove_blocks()
             Game.remove_row()
+            Game.adjust_difficulty()
             Game.visuals()
             Timer.count()
             
@@ -234,7 +240,7 @@ class Game():
             Block.next_blocks = []
             Block.next_blocks = copy.deepcopy(Block_types.block_types[random.randint(0, len(Block_types.block_types)-1)]) # Randomizes a block to add to the next_blocks
             for block in Block.next_blocks: # Takes the blocks from next_blocks and puts them in the same place
-                block.x, block.y = (b_size*15, b_size*2)
+                block.x, block.y = (b_size*15, b_size*3)
             Game.recreate_shape(Block.next_blocks) # Recreates the shape of the block
 
         else:
@@ -272,7 +278,7 @@ class Game():
         if keys_pressed[pg.K_c] and Timer.swap == -1:
             Game.swap()
             Timer.swap = 0
-
+        
     def remove_blocks():
         """Moves the blocks into static list when they fall and adds new blocks"""
         for block in Block.moving_blocks:
@@ -404,6 +410,13 @@ class Game():
 
         if len(Block.moving_blocks) == 0: # If moving blocks is empty it adds blocks to it
             Game.add_new_blocks()
+
+    def adjust_difficulty():
+        for score, cooldown, level in ((5000, 0.6, 1), (10000, 0.5, 2), (15000, 0.4, 3), (25000, 0.35, 4), (35000, 0.3, 5), (45000, 0.25, 6), (55000, 0.2, 7), (70000, 0.15, 8), (100000, 0.1, 9), (150000, 0.05, 10)):
+            if Values.Game_properties.score >= score:
+                Values.Cooldown.PUSH_DOWN_COOLDOWN = cooldown
+                Values.Game_properties.level = level
+
 
 if __name__ == "__main__": # Runs the game if run from the main file
     Game()
