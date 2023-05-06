@@ -61,7 +61,7 @@ class Fonts():
     TITLE_LEVEL = TETRIS_FONT.render('LEVEL', 1, Colors.WHITE)
     level = TETRIS_FONT.render(str(Values.Game_properties.level), 1, Colors.GOLD)
 
-    texts = [(TITLE_SCORE, (b_size/6,b_size*2)), [score, (b_size/6, b_size*3.5)], (HOLD, (b_size/2, b_size*10)), (NEXT, (b_size*14 + b_size/2, b_size)), (TITLE_LEVEL, (b_size*14 + b_size/2, b_size*10)), [level, (b_size*15 + b_size*0.75, b_size*12)]]
+    texts = [(TITLE_SCORE, (b_size/6,b_size*2)), [score, (b_size/6, b_size*3.5)], (HOLD, (b_size/2, b_size*10)), (NEXT, (b_size*14 + b_size/2, b_size*2)), (TITLE_LEVEL, (b_size*14 + b_size/2, b_size*10)), [level, (b_size*15 + b_size*0.75, b_size*12)]]
 
     def update_text():
         """Method that updates text on the screen"""
@@ -93,13 +93,6 @@ class Timer():
             Timer.rotate += 1
         if Timer.rotate / Values.Game_properties.TICK_RATE == Values.Cooldown.ROTATE_COOLDOWN:
             Timer.rotate = -1
-        
-        if Timer.swap != -1:
-            Timer.swap += 1
-        if Timer.swap / Values.Game_properties.TICK_RATE == Values.Cooldown.SWAP_COOLDOWN:
-            Timer.swap = -1
-
-
 
 class Block():
     """Class that stores block methods and blocks of the game"""
@@ -109,11 +102,11 @@ class Block():
     holded_blocks = [] #Blocks that are being "Holded" by the player and can be swapped with the moving blocks
     next_blocks  =  [] #Blocks that will come up next
   
-    def __init__(self, x, y, color, index, block_type):
+    def __init__(self, x, y, sprite, index, block_type):
         """The init function that stores all the properties of a block object"""
         self.x = x
         self.y = y
-        self.color = color
+        self.sprite = sprite
         self.index = index
         self.block_type = block_type
         self.object = pg.Rect(self.x, self.y, Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE)
@@ -121,7 +114,7 @@ class Block():
     def display(self):
         """Displayes the block"""
         self.object = pg.Rect(self.x, self.y, Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE)
-        pg.draw.rect(Game.WINDOW, self.color, self.object)
+        Game.WINDOW.blit(Gui.BLOCK_SPRITES[self.sprite], (self.x, self.y))
 
     def push_down(self):
         """Moves the block down"""
@@ -143,32 +136,56 @@ class Block():
         else:
             self.x += Values.Game_properties.BLOCK_SIZE
     
-
-        
-
-class Block_types():
-      """Stores all the possible block types"""
-      block_types = [
-        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.CYAN, index, '1') for pos_x, pos_y, index in zip([8 for _ in range(4)], [value+1 for value in range(4)], [value+1 for value in range(4)])],
-        
-        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.BLUE, index, '2') for pos_x, pos_y, index in zip([8, 8, 8, 9], [1, 2, 3, 3], [value+1 for value in range(4)])],
-
-        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.ORANGE, index, '3') for pos_x, pos_y, index in zip([8, 8, 8, 7], [1, 2, 3, 3], [value+1 for value in range(4)])],
-
-        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.PURPLE, index, '4') for pos_x, pos_y, index in zip([8, 8, 7, 9], [1, 2, 2, 2], [value+1 for value in range(4)])],
-
-        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.RED, index, '5') for pos_x, pos_y, index in zip([7, 8, 8, 9], [2, 2, 1, 1], [value+1 for value in range(4)])],
-
-        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.GREEN, index, '6') for pos_x, pos_y, index in zip([7, 8, 8, 9], [1, 1, 2, 2], [value+1 for value in range(4)])],
-
-        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, Colors.YELLOW, index, '7') for pos_x, pos_y, index in zip([8, 8, 9, 9], [1, 2, 1, 2], [value+1 for value in range(4)])]
-      ]
-
 class Gui():
     """Contains all the graphical user interface related items"""
     left_square = pg.Rect(0,0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
     right_square = pg.Rect(Values.Game_properties.BLOCK_SIZE * 14 , 0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
 
+    BACKGROUND_SPRITE = pg.image.load('sprites/background.jpg')
+    BACKGROUND_SPRITE = pg.transform.rotate(BACKGROUND_SPRITE, 90)
+    BACKGROUND_SPRITE = pg.transform.scale(BACKGROUND_SPRITE, (Values.Game_properties.BLOCK_SIZE*10, Values.Game_properties.BLOCK_SIZE*20))
+
+    CYAN_SPRITE = pg.image.load('sprites/cyan_block.png')
+    CYAN_SPRITE = pg.transform.scale(CYAN_SPRITE, (Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE))
+
+    BLUE_SPRITE = pg.image.load('sprites/blue_block.png')
+    BLUE_SPRITE = pg.transform.scale(BLUE_SPRITE, (Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE))
+
+    ORANGE_SPRITE = pg.image.load('sprites/orange_block.png')
+    ORANGE_SPRITE = pg.transform.scale(ORANGE_SPRITE, (Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE))
+
+    PURPLE_SPRITE = pg.image.load('sprites/purple_block.png')
+    PURPLE_SPRITE = pg.transform.scale(PURPLE_SPRITE, (Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE))
+
+    RED_SPRITE = pg.image.load('sprites/red_block.png')
+    RED_SPRITE = pg.transform.scale(RED_SPRITE, (Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE))
+
+    GREEN_SPRITE = pg.image.load('sprites/green_block.png')
+    GREEN_SPRITE = pg.transform.scale(GREEN_SPRITE, (Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE))
+
+    YELLOW_SPRITE = pg.image.load('sprites/yellow_block.png')
+    YELLOW_SPRITE = pg.transform.scale(YELLOW_SPRITE, (Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE))
+
+    BLOCK_SPRITES = [CYAN_SPRITE, BLUE_SPRITE, ORANGE_SPRITE, PURPLE_SPRITE, RED_SPRITE, GREEN_SPRITE, YELLOW_SPRITE]
+        
+
+class Block_types():
+      """Stores all the possible block types"""
+      block_types = [
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, 0 , index, '1') for pos_x, pos_y, index in zip([8 for _ in range(4)], [value+1 for value in range(4)], [value+1 for value in range(4)])],
+        
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, 1, index, '2') for pos_x, pos_y, index in zip([8, 8, 8, 9], [1, 2, 3, 3], [value+1 for value in range(4)])],
+
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, 2, index, '3') for pos_x, pos_y, index in zip([8, 8, 8, 7], [1, 2, 3, 3], [value+1 for value in range(4)])],
+
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, 3, index, '4') for pos_x, pos_y, index in zip([8, 8, 7, 9], [1, 2, 2, 2], [value+1 for value in range(4)])],
+
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, 4, index, '5') for pos_x, pos_y, index in zip([7, 8, 8, 9], [2, 2, 1, 1], [value+1 for value in range(4)])],
+
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, 5, index, '6') for pos_x, pos_y, index in zip([7, 8, 8, 9], [1, 1, 2, 2], [value+1 for value in range(4)])],
+
+        [Block(Values.Game_properties.BLOCK_SIZE * pos_x, -Values.Game_properties.BLOCK_SIZE * pos_y, 6, index, '7') for pos_x, pos_y, index in zip([8, 8, 9, 9], [1, 2, 1, 2], [value+1 for value in range(4)])]
+      ]
 
 class Game():
     """Class that contains all the important information and game loop"""
@@ -208,6 +225,7 @@ class Game():
     def visuals():
         """Responsible for drawing all the objects on the screen"""
         Game.WINDOW.fill(Values.Game_properties.BACKGROUND_COLOR)
+        Game.WINDOW.blit(Gui.BACKGROUND_SPRITE, (Values.Game_properties.BLOCK_SIZE*4, 0))
       
         pg.draw.rect(Game.WINDOW, Colors.BLACK, Gui.left_square)
         pg.draw.rect(Game.WINDOW, Colors.BLACK, Gui.right_square)
@@ -240,7 +258,7 @@ class Game():
             Block.next_blocks = []
             Block.next_blocks = copy.deepcopy(Block_types.block_types[random.randint(0, len(Block_types.block_types)-1)]) # Randomizes a block to add to the next_blocks
             for block in Block.next_blocks: # Takes the blocks from next_blocks and puts them in the same place
-                block.x, block.y = (b_size*15, b_size*3)
+                block.x, block.y = (b_size*15, b_size*4)
             Game.recreate_shape(Block.next_blocks) # Recreates the shape of the block
 
         else:
@@ -286,6 +304,7 @@ class Game():
                 Block.static_blocks += Block.moving_blocks 
                 Block.moving_blocks = []
                 Game.add_new_blocks()
+                Timer.swap = -1
                 break
 
     def remove_row():
@@ -316,7 +335,7 @@ class Game():
 
     def rotate():
         """Rotates the block"""
-        if Block.moving_blocks[0].color != Colors.YELLOW:
+        if Block.moving_blocks[0].sprite != 6:
             # Define the coordinates of the block
             blocks = []
             for block in Block.moving_blocks:
@@ -391,7 +410,6 @@ class Game():
     def swap():
         """Swaps the blocks between moving and holded list"""
         temporary = []
-        b_size = Values.Game_properties.BLOCK_SIZE
         
         for block in Block.moving_blocks: # Copies the moving block list
             temporary.append(block)
