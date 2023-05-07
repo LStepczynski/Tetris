@@ -30,12 +30,12 @@ class Values():
         pg.mixer.init(44100, -16,2,2048)
         TETRIS_MUSIC = pg.mixer.Sound('Tetris_theme.mp3')
 
-    class Cooldown():
+    class Cooldowns():
         """Class that stores all the cooldown values"""
-        PUSH_DOWN_COOLDOWN = 0.7
-        PUSH_SIDE_COOLDOWN = 0.1
-        ROTATE_COOLDOWN = 0.3
-        SWAP_COOLDOWN = 1
+        PUSH_DOWN = 0.7
+        PUSH_SIDE = 0.1
+        ROTATE = 0.3
+        HARD_DROP = 0.2
 
     class Game_properties():
         """Class that stores all the game properties"""
@@ -75,24 +75,30 @@ class Timer():
     push_down = -1
     push_side = -1
     rotate = -1
+    hard_drop = -1
     swap = -1
 
     def count():
         """Method that counts and resets the cooldowns"""
         if Timer.push_down != -1:
             Timer.push_down += 1
-        if Timer.push_down / Values.Game_properties.TICK_RATE >= Values.Cooldown.PUSH_DOWN_COOLDOWN:
+        if Timer.push_down / Values.Game_properties.TICK_RATE >= Values.Cooldowns.PUSH_DOWN:
             Timer.push_down = -1
 
         if Timer.push_side != -1:
             Timer.push_side += 1
-        if Timer.push_side / Values.Game_properties.TICK_RATE == Values.Cooldown.PUSH_SIDE_COOLDOWN:
+        if Timer.push_side / Values.Game_properties.TICK_RATE == Values.Cooldowns.PUSH_SIDE:
             Timer.push_side = -1
         
         if Timer.rotate != -1:
             Timer.rotate += 1
-        if Timer.rotate / Values.Game_properties.TICK_RATE == Values.Cooldown.ROTATE_COOLDOWN:
+        if Timer.rotate / Values.Game_properties.TICK_RATE == Values.Cooldowns.ROTATE:
             Timer.rotate = -1
+        
+        if Timer.hard_drop != -1:
+            Timer.hard_drop += 1
+        if Timer.hard_drop / Values.Game_properties.TICK_RATE == Values.Cooldowns.HARD_DROP:
+            Timer.hard_drop = -1
 
 class Block():
     """Class that stores block methods and blocks of the game"""
@@ -123,11 +129,11 @@ class Block():
     def should_fall(self):
         """Checks if the block should fall"""
         if self.y + Values.Game_properties.BLOCK_SIZE == Values.Game_properties.HEIGHT:
-            return True
+            return False
         for block in Block.static_blocks:
             if self.y + Values.Game_properties.BLOCK_SIZE == block.y and self.x == block.x:
-                return True
-        return False
+                return False
+        return True
 
     def push_side(self, side):
         """Pushes the block to the sides"""
@@ -297,10 +303,20 @@ class Game():
             Game.swap()
             Timer.swap = 0
         
+        if keys_pressed[pg.K_SPACE] and Timer.hard_drop == -1:
+            repeat = True
+            while repeat:
+                Values.Game_properties.score += 12
+                for block in Block.moving_blocks:
+                    block.push_down()
+                    if not block.should_fall():
+                        repeat = False
+            Timer.hard_drop = 0
+        
     def remove_blocks():
         """Moves the blocks into static list when they fall and adds new blocks"""
         for block in Block.moving_blocks:
-            if block.should_fall():
+            if not block.should_fall():
                 Block.static_blocks += Block.moving_blocks 
                 Block.moving_blocks = []
                 Game.add_new_blocks()
@@ -432,7 +448,7 @@ class Game():
     def adjust_difficulty():
         for score, cooldown, level in ((5000, 0.6, 1), (10000, 0.5, 2), (15000, 0.4, 3), (25000, 0.35, 4), (35000, 0.3, 5), (45000, 0.25, 6), (55000, 0.2, 7), (70000, 0.15, 8), (100000, 0.1, 9), (150000, 0.05, 10)):
             if Values.Game_properties.score >= score:
-                Values.Cooldown.PUSH_DOWN_COOLDOWN = cooldown
+                Values.Cooldowns.PUSH_DOWN = cooldown
                 Values.Game_properties.level = level
 
 
