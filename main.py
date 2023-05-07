@@ -42,7 +42,7 @@ class Values():
         BLOCK_SIZE = 60
         WIDTH = BLOCK_SIZE * 18
         HEIGHT = BLOCK_SIZE * 20
-        TICK_RATE = 30
+        TICK_RATE = 20
         TITLE = 'Tetris by LSTEP'
         BACKGROUND_COLOR = Colors.BEIGE
         score = 0
@@ -107,6 +107,7 @@ class Block():
     static_blocks = [] #Blocks that already fell
     holded_blocks = [] #Blocks that are being "Holded" by the player and can be swapped with the moving blocks
     next_blocks  =  [] #Blocks that will come up next
+    ghost_blocks =  []
   
     def __init__(self, x, y, sprite, index, block_type):
         """The init function that stores all the properties of a block object"""
@@ -172,9 +173,11 @@ class Gui():
     YELLOW_SPRITE = pg.image.load('sprites/yellow_block.png')
     YELLOW_SPRITE = pg.transform.scale(YELLOW_SPRITE, (Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE))
 
-    BLOCK_SPRITES = [CYAN_SPRITE, BLUE_SPRITE, ORANGE_SPRITE, PURPLE_SPRITE, RED_SPRITE, GREEN_SPRITE, YELLOW_SPRITE]
-        
+    GHOST_SPRITE = pg.image.load('sprites/ghost_block.png')
+    GHOST_SPRITE = pg.transform.scale(GHOST_SPRITE, (Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE))
 
+    BLOCK_SPRITES = [CYAN_SPRITE, BLUE_SPRITE, ORANGE_SPRITE, PURPLE_SPRITE, RED_SPRITE, GREEN_SPRITE, YELLOW_SPRITE, GHOST_SPRITE]
+        
 class Block_types():
       """Stores all the possible block types"""
       block_types = [
@@ -221,9 +224,10 @@ class Game():
                 Timer.push_down = 0
 
             Game.controls()
+            Game.adjust_difficulty()
             Game.remove_blocks()
             Game.remove_row()
-            Game.adjust_difficulty()
+            Game.place_ghost_blocks()
             Game.visuals()
             Timer.count()
             
@@ -239,6 +243,8 @@ class Game():
         for text, coordinates in Fonts.texts:
             Game.WINDOW.blit(text, coordinates)
 
+        for block in Block.ghost_blocks:
+            block.display()
         for block in Block.moving_blocks:
             block.display()
         for block in Block.static_blocks:
@@ -451,6 +457,17 @@ class Game():
                 Values.Cooldowns.PUSH_DOWN = cooldown
                 Values.Game_properties.level = level
 
+    def place_ghost_blocks():
+        Block.ghost_blocks = copy.deepcopy(Block.moving_blocks)
+        repeat = True
+        while repeat:
+            for block in Block.ghost_blocks:
+                block.sprite = 7
+                block.push_down()
+                if not block.should_fall():
+                    repeat = False
+
+        
 
 if __name__ == "__main__": # Runs the game if run from the main file
     Game()
