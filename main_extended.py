@@ -28,7 +28,7 @@ class Values():
     class Sounds():
         """Class that stores all the audio"""
         pg.mixer.init(44100, -16,2,2048)
-        TETRIS_MUSIC = pg.mixer.Sound('Tetris_theme.mp3')
+        TETRIS_MUSIC = pg.mixer.Sound('Tetris_theme2.mp3')
 
     class Cooldowns():
         """Class that stores all the cooldown values"""
@@ -373,6 +373,7 @@ class Game():
             for block, index in zip(final_block, range(4)):
                 Block.moving_blocks[index].x = block[0]
                 Block.moving_blocks[index].y = block[1]
+            Game.out_of_bounds()
 
     def should_move(x_cor, side):
         """Checks if a block can move to the side"""
@@ -491,5 +492,23 @@ class Game():
                     should_fall = False
         return should_fall
     
+    def out_of_bounds(repeat = True):
+        b_size = Values.Game_properties.BLOCK_SIZE
+        move_x = 0
+
+        for block in Block.moving_blocks:
+            if block.x < b_size*4:
+                move_x = b_size
+            if block.x > b_size*13:
+                move_x = -b_size
+        
+        for block in Block.moving_blocks:
+            block.x += move_x
+
+        if move_x != 0 and Block.moving_blocks[0].sprite == 0 and repeat:
+            Game.out_of_bounds(False)
+            print('a')
+
+
 if __name__ == "__main__": # Runs the game if run from the main file
     Game()
