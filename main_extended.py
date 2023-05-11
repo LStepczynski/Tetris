@@ -1,7 +1,6 @@
 import pygame as pg
 import copy
 import random
-import time
 
 
 class Colors():
@@ -28,15 +27,29 @@ class Values():
     class Sounds():
         """Class that stores all the audio"""
         pg.mixer.init(44100, -16,2,2048)
-        TETRIS_MUSIC = pg.mixer.Sound('Tetris_theme2.mp3')
+        TETRIS_MUSIC = pg.mixer.Sound('sounds/Tetris_theme.mp3')
+        TETRIS_MUSIC.set_volume(0.1)
+
+        EXPLODE = pg.mixer.Sound('sounds/explosion.mp3')
+        EXPLODE.set_volume(0.4)
+        
+        HARD_DROP = pg.mixer.Sound('sounds/hard_drop.mp3')
+        HARD_DROP.set_volume(0.5)
+
+        ROTATE = pg.mixer.Sound('sounds/rotate.mp3')
+        ROTATE.set_volume(0.2)
+
+        SWAP = pg.mixer.Sound('sounds/swap.mp3')
+        SWAP.set_volume(0.7)
 
     class Cooldowns():
         """Class that stores all the cooldown values"""
         PUSH_DOWN = 0.7
         PUSH_SIDE = 0.1
         ROTATE = 0.3
-        HARD_DROP = 0.2
+        HARD_DROP = 0.5
         MOVE_MARGIN = 1 # Defines for how long can a player move after the block fell
+        REMOVE_ROW = 0.7 # Defines how long will a row say on the map before being removed
 
     class Game_properties():
         """Class that stores all the game properties"""
@@ -79,6 +92,7 @@ class Timer():
     hard_drop = -1
     swap = -1
     move_margin = -1
+    remove_row = -1
 
     def count():
         """Method that counts and resets the cooldowns"""
@@ -107,7 +121,14 @@ class Timer():
         if Timer.move_margin / Values.Game_properties.TICK_RATE == Values.Cooldowns.MOVE_MARGIN:
             Game.hard_drop()
             Timer.move_margin = -1
-
+        
+        if Timer.remove_row != -1:
+            Timer.remove_row += 1
+        if Timer.remove_row / Values.Game_properties.TICK_RATE == Values.Cooldowns.REMOVE_ROW:
+            Game.remove_row(True)
+            Values.Sounds.EXPLODE.play()
+            Timer.remove_row = -1
+            
 class Block():
     """Class that stores block methods and blocks of the game"""
     # Lists that store the blocks
@@ -116,6 +137,7 @@ class Block():
     holded_blocks = [] #Blocks that are being "Holded" by the player and can be swapped with the moving blocks
     next_blocks  =  [] #Blocks that will come up next
     ghost_blocks =  []
+    blocks_to_delete = []
   
     def __init__(self, x, y, sprite, index, block_type):
         """The init function that stores all the properties of a block object"""
@@ -175,7 +197,10 @@ class Gui():
     GHOST_SPRITE = pg.image.load('sprites/ghost_block.png')
     GHOST_SPRITE = pg.transform.scale(GHOST_SPRITE, (Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE))
 
-    BLOCK_SPRITES = [CYAN_SPRITE, BLUE_SPRITE, ORANGE_SPRITE, PURPLE_SPRITE, RED_SPRITE, GREEN_SPRITE, YELLOW_SPRITE, GHOST_SPRITE]
+    DELETED_SPRITE = pg.image.load('sprites/deleted_block.png')
+    DELETED_SPRITE = pg.transform.scale(DELETED_SPRITE, (Values.Game_properties.BLOCK_SIZE, Values.Game_properties.BLOCK_SIZE))
+
+    BLOCK_SPRITES = [CYAN_SPRITE, BLUE_SPRITE, ORANGE_SPRITE, PURPLE_SPRITE, RED_SPRITE, GREEN_SPRITE, YELLOW_SPRITE, GHOST_SPRITE, DELETED_SPRITE]
         
 class Block_types():
       """Stores all the possible block types"""
@@ -203,7 +228,6 @@ class Game():
     def __init__(self):
         """Contains the game loop and initializes items connected with it"""
         pg.init()
-        Values.Sounds.TETRIS_MUSIC.set_volume(0.1)
         Values.Sounds.TETRIS_MUSIC.play(-1)
         self.clock = pg.time.Clock()
         self.run = True
@@ -324,34 +348,39 @@ class Game():
         if not Game.should_fall(Block.moving_blocks) and Timer.move_margin == -1:
             Timer.move_margin = 0
 
-    def remove_row():
+    def remove_row(remove = False):
         """Checks if a row is filled, removes the blocks, and pushes other down"""
         y_values = list(reversed([Values.Game_properties.BLOCK_SIZE * value for value in range(20)])) # List of all Y-values on the screen
-
+        
         for y_value in y_values: # Iterates through each Y-value
-            blocks_to_remove = []
             num_of_blocks = 0
 
             for block in Block.static_blocks: # Checks how many blocks are in a row
                 if block.y == y_value:
                     num_of_blocks += 1
 
-            if num_of_blocks == 10: # If the row is full it selects the blocks of the row and appends them to the blocks_to_remove list
+            if num_of_blocks == 10: # If the row is full it selects the blocks of the row and appends them to the Block.blocks_to_delete list
                 for block in Block.static_blocks:
-                    if block.y == y_value:
-                        blocks_to_remove.append(block)
+                    if block.y == y_value and block.sprite != 8:
+                        block.sprite = 8
+                        Block.blocks_to_delete.append(block)
+                        Timer.remove_row = 0
 
-            for block in blocks_to_remove: # Removes the blocks from the static list
+        if remove:
+            for block in Block.blocks_to_delete: # Removes the blocks from the static list
                     Block.static_blocks.remove(block)
-                    Values.Game_properties.score += 50
+                    Values.Game_properties.score += len(Block.blocks_to_delete) * 2
 
-            if blocks_to_remove: # If The Y-Value of a block is lower than the Y-value of the row it moves the block down
+            if Block.blocks_to_delete: # If The Y-Value of a block is lower than the Y-value of the row it moves the block down
                 for block in Block.static_blocks:
-                    if block.y < y_value:
-                        block.y += Values.Game_properties.BLOCK_SIZE
+                    if block.y < Block.blocks_to_delete[0].y:
+                        block.y += Values.Game_properties.BLOCK_SIZE * (len(Block.blocks_to_delete) / 10)
+            Block.blocks_to_delete = []
 
     def rotate():
         """Rotates the block"""
+        Values.Sounds.ROTATE.play()
+
         if Block.moving_blocks[0].sprite != 6:
             # Define the coordinates of the block
             blocks = []
@@ -433,6 +462,8 @@ class Game():
 
     def swap():
         """Swaps the blocks between moving and holded list"""
+        Values.Sounds.SWAP.play()
+        
         temporary = []
         
         for block in Block.moving_blocks: # Copies the moving block list
@@ -470,6 +501,7 @@ class Game():
                 block.push_down()
 
     def hard_drop():
+        Values.Sounds.HARD_DROP.play()
         repeat = True
         while repeat:
             Values.Game_properties.score += 12
