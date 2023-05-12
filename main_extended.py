@@ -1,7 +1,7 @@
 import pygame as pg
 import copy
 import random
-
+import time
 
 class Colors():
     """Class that contains all the most common colors"""
@@ -29,6 +29,9 @@ class Values():
         pg.mixer.init(44100, -16,2,2048)
         TETRIS_MUSIC = pg.mixer.Sound('sounds/Tetris_theme.mp3')
         TETRIS_MUSIC.set_volume(0.1)
+
+        MENU_MUSIC = pg.mixer.Sound('sounds/Tetris_menu.mp3')
+        MENU_MUSIC.set_volume(0.4)
 
         EXPLODE = pg.mixer.Sound('sounds/explosion.mp3')
         EXPLODE.set_volume(0.4)
@@ -166,8 +169,15 @@ class Block():
     
 class Gui():
     """Contains all the graphical user interface related items"""
+    b_size = Values.Game_properties.BLOCK_SIZE
+
     left_square = pg.Rect(0,0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
     right_square = pg.Rect(Values.Game_properties.BLOCK_SIZE * 14 , 0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
+
+    BUTTON_HITBOX = pg.Rect(b_size*4, b_size*12, b_size*4, b_size*2)
+    
+    MENU = pg.image.load('sprites/menu.png')
+    MENU = pg.transform.scale(MENU, (Values.Game_properties.WIDTH, Values.Game_properties.HEIGHT))
 
     BACKGROUND_SPRITE = pg.image.load('sprites/background.jpg')
     BACKGROUND_SPRITE = pg.transform.rotate(BACKGROUND_SPRITE, 90)
@@ -228,31 +238,46 @@ class Game():
     def __init__(self):
         """Contains the game loop and initializes items connected with it"""
         pg.init()
-        Values.Sounds.TETRIS_MUSIC.play(-1)
         self.clock = pg.time.Clock()
         self.run = True
+
         Block.next_blocks = copy.deepcopy(Block_types.block_types[random.randint(0, len(Block_types.block_types)-1)])
         Game.add_new_blocks()
+        Values.Sounds.MENU_MUSIC.play(-1)
+        once = True
         while self.run == True:
             self.clock.tick(Values.Game_properties.TICK_RATE)
             
+            self.mouse = pg.Rect(*pg.mouse.get_pos(), 5, 5)
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.run = False
-            
+                if event.type == pg.MOUSEBUTTONDOWN:
+                    if once and self.mouse.colliderect(Gui.BUTTON_HITBOX):
+                        once = False
+                        Values.Sounds.MENU_MUSIC.fadeout(2000)
+                        time.sleep(2)
+                        Values.Sounds.TETRIS_MUSIC.play(-1, fade_ms=1000)
+
+
             if Timer.push_down == -1 and Game.should_fall(Block.moving_blocks): #Pushes the blocks down when the timer reaches -1
                 Game.push_down()
                 Values.Game_properties.score += 5
                 Fonts.update_text()
                 Timer.push_down = 0
 
-            Game.controls()
-            Game.adjust_difficulty()
-            Game.remove_blocks()
-            Game.remove_row()
-            Game.place_ghost_blocks()
-            Game.visuals()
-            Timer.count()
+            if not once:
+                Game.controls()
+                Game.adjust_difficulty()
+                Game.remove_blocks()
+                Game.remove_row()
+                Game.place_ghost_blocks()
+                Game.visuals()
+                Timer.count()
+            else:
+                Game.WINDOW.blit(Gui.MENU, (0,0))
+
+            pg.display.update()
             
 
     def visuals():
@@ -277,8 +302,6 @@ class Game():
             block.display()
         for block in Block.next_blocks:
             block.display()
-
-        pg.display.update()
 
     def push_down():
         """Pushes the blocks one tile down"""
@@ -539,7 +562,6 @@ class Game():
 
         if move_x != 0 and Block.moving_blocks[0].sprite == 0 and repeat:
             Game.out_of_bounds(False)
-            print('a')
 
 
 if __name__ == "__main__": # Runs the game if run from the main file
