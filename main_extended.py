@@ -174,6 +174,11 @@ class Gui():
     left_square = pg.Rect(0,0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
     right_square = pg.Rect(Values.Game_properties.BLOCK_SIZE * 14 , 0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
 
+    PAUSE_BUTTON = pg.Rect(b_size*15, b_size*17, b_size*2, b_size*2)
+
+    PAUSE_BUTTON_SPRITE = pg.image.load('sprites/pause.png')
+    PAUSE_BUTTON_SPRITE = pg.transform.scale(PAUSE_BUTTON_SPRITE, (PAUSE_BUTTON.width, PAUSE_BUTTON.height))
+
     BUTTON_HITBOX = pg.Rect(b_size*4, b_size*12, b_size*4, b_size*2)
     
     MENU = pg.image.load('sprites/menu.png')
@@ -245,6 +250,7 @@ class Game():
         Game.add_new_blocks()
         Values.Sounds.MENU_MUSIC.play(-1)
         once = True
+        time_flow = False
         while self.run == True:
             self.clock.tick(Values.Game_properties.TICK_RATE)
             
@@ -255,10 +261,13 @@ class Game():
                 if event.type == pg.MOUSEBUTTONDOWN:
                     if once and self.mouse.colliderect(Gui.BUTTON_HITBOX):
                         once = False
+                        time_flow = True
                         Values.Sounds.MENU_MUSIC.fadeout(2000)
                         time.sleep(2)
                         Values.Sounds.TETRIS_MUSIC.play(-1, fade_ms=1000)
-
+                    
+                    if not once and self.mouse.colliderect(Gui.PAUSE_BUTTON):
+                        time_flow = not time_flow
 
             if Timer.push_down == -1 and Game.should_fall(Block.moving_blocks): #Pushes the blocks down when the timer reaches -1
                 Game.push_down()
@@ -267,15 +276,19 @@ class Game():
                 Timer.push_down = 0
 
             if not once:
-                Game.controls()
                 Game.adjust_difficulty()
                 Game.remove_blocks()
                 Game.remove_row()
                 Game.place_ghost_blocks()
                 Game.visuals()
-                Timer.count()
+                if time_flow:
+                    Game.controls()
+                else: Game.WINDOW.blit(Gui.PAUSE_BUTTON_SPRITE, (Values.Game_properties.BLOCK_SIZE*8, Values.Game_properties.BLOCK_SIZE*9))
             else:
                 Game.WINDOW.blit(Gui.MENU, (0,0))
+
+            if time_flow:
+                Timer.count()
 
             pg.display.update()
             
@@ -287,6 +300,7 @@ class Game():
       
         pg.draw.rect(Game.WINDOW, Colors.BLACK, Gui.left_square)
         pg.draw.rect(Game.WINDOW, Colors.BLACK, Gui.right_square)
+        Game.WINDOW.blit(Gui.PAUSE_BUTTON_SPRITE, (Gui.PAUSE_BUTTON.x, Gui.PAUSE_BUTTON.y))
 
         for text, coordinates in Fonts.texts:
             Game.WINDOW.blit(text, coordinates)
