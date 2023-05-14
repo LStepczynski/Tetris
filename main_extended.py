@@ -33,6 +33,12 @@ class Values():
         MENU_MUSIC = pg.mixer.Sound('sounds/Tetris_menu.mp3')
         MENU_MUSIC.set_volume(0.4)
 
+        DEATH_MUSIC = pg.mixer.Sound('sounds/death_music.mp3')
+        DEATH_MUSIC.set_volume(0.4)
+
+        DEATH_SOUND = pg.mixer.Sound('sounds/death.mp3')
+        DEATH_MUSIC.set_volume(0.4)
+
         EXPLODE = pg.mixer.Sound('sounds/explosion.mp3')
         EXPLODE.set_volume(0.4)
         
@@ -72,13 +78,20 @@ class Fonts():
     TETRIS_FONT = pg.font.SysFont('Tetris', Values.Game_properties.BLOCK_SIZE)
     
     TITLE_SCORE = TETRIS_FONT.render("SCORE", 1, Colors.WHITE)
+
     score = TETRIS_FONT.render(str(Values.Game_properties.score), 1, Colors.WHITE)
+
     HOLD = TETRIS_FONT.render('HOLD', 1, Colors.WHITE)
+
     NEXT = TETRIS_FONT.render('NEXT', 1, Colors.WHITE)
+
     TITLE_LEVEL = TETRIS_FONT.render('LEVEL', 1, Colors.WHITE)
+
     level = TETRIS_FONT.render(str(Values.Game_properties.level), 1, Colors.GOLD)
 
     texts = [(TITLE_SCORE, (b_size/6,b_size*2)), [score, (b_size/6, b_size*3.5)], (HOLD, (b_size/2, b_size*10)), (NEXT, (b_size*14 + b_size/2, b_size*2)), (TITLE_LEVEL, (b_size*14 + b_size/2, b_size*10)), [level, (b_size*15 + b_size*0.75, b_size*12)]]
+
+    GAME_OVER_TEXT = TETRIS_FONT.render('PRESS R TO RESET', 1, Colors.WHITE)
 
     def update_text():
         """Method that updates text on the screen"""
@@ -174,6 +187,9 @@ class Gui():
     left_square = pg.Rect(0,0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
     right_square = pg.Rect(Values.Game_properties.BLOCK_SIZE * 14 , 0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
 
+    GAME_OVER = pg.image.load('sprites/game_over.jpg')
+    GAME_OVER = pg.transform.scale(GAME_OVER, (Values.Game_properties.BLOCK_SIZE*15, Values.Game_properties.BLOCK_SIZE*9))
+
     PAUSE_BUTTON = pg.Rect(b_size*15, b_size*17, b_size*2, b_size*2)
 
     PAUSE_BUTTON_SPRITE = pg.image.load('sprites/pause.png')
@@ -239,35 +255,35 @@ class Game():
     """Class that contains all the important information and game loop"""
     WINDOW = pg.display.set_mode((Values.Game_properties.WIDTH, Values.Game_properties.HEIGHT))
     pg.display.set_caption(Values.Game_properties.TITLE)
+    time_flow = False
+    once = True
+    run = True
 
     def __init__(self):
         """Contains the game loop and initializes items connected with it"""
         pg.init()
         self.clock = pg.time.Clock()
-        self.run = True
 
         Block.next_blocks = copy.deepcopy(Block_types.block_types[random.randint(0, len(Block_types.block_types)-1)])
         Game.add_new_blocks()
         Values.Sounds.MENU_MUSIC.play(-1)
-        once = True
-        time_flow = False
-        while self.run == True:
+        while Game.run == True:
             self.clock.tick(Values.Game_properties.TICK_RATE)
             
             self.mouse = pg.Rect(*pg.mouse.get_pos(), 5, 5)
             for event in pg.event.get():
                 if event.type == pg.QUIT:
-                    self.run = False
+                    Game.run = False
                 if event.type == pg.MOUSEBUTTONDOWN:
-                    if once and self.mouse.colliderect(Gui.BUTTON_HITBOX):
-                        once = False
-                        time_flow = True
+                    if Game.once and self.mouse.colliderect(Gui.BUTTON_HITBOX):
+                        Game.once = False
+                        Game.time_flow = True
                         Values.Sounds.MENU_MUSIC.fadeout(2000)
                         time.sleep(2)
                         Values.Sounds.TETRIS_MUSIC.play(-1, fade_ms=1000)
                     
-                    if not once and self.mouse.colliderect(Gui.PAUSE_BUTTON):
-                        time_flow = not time_flow
+                    if not Game.once and self.mouse.colliderect(Gui.PAUSE_BUTTON):
+                        Game.time_flow = not Game.time_flow
 
             if Timer.push_down == -1 and Game.should_fall(Block.moving_blocks): #Pushes the blocks down when the timer reaches -1
                 Game.push_down()
@@ -275,21 +291,22 @@ class Game():
                 Fonts.update_text()
                 Timer.push_down = 0
 
-            if not once:
+            if not Game.once:
                 Game.adjust_difficulty()
                 Game.remove_blocks()
                 Game.remove_row()
                 Game.place_ghost_blocks()
                 Game.visuals()
-                if time_flow:
+                if Game.time_flow:
                     Game.controls()
                 else: Game.WINDOW.blit(Gui.PAUSE_BUTTON_SPRITE, (Values.Game_properties.BLOCK_SIZE*8, Values.Game_properties.BLOCK_SIZE*9))
             else:
                 Game.WINDOW.blit(Gui.MENU, (0,0))
 
-            if time_flow:
+            if Game.time_flow:
                 Timer.count()
-
+            if Game.should_die():
+                Game.restart()
             pg.display.update()
             
 
@@ -522,7 +539,7 @@ class Game():
             Game.add_new_blocks()
 
     def adjust_difficulty():
-        for score, cooldown, level in ((5000, 0.6, 1), (10000, 0.5, 2), (15000, 0.4, 3), (25000, 0.35, 4), (35000, 0.3, 5), (45000, 0.25, 6), (55000, 0.2, 7), (70000, 0.15, 8), (100000, 0.1, 9), (150000, 0.05, 10)):
+        for score, cooldown, level in ((0, 0.7, 0), (5000, 0.6, 1), (10000, 0.5, 2), (15000, 0.4, 3), (25000, 0.35, 4), (35000, 0.3, 5), (45000, 0.25, 6), (55000, 0.2, 7), (70000, 0.15, 8), (100000, 0.1, 9), (150000, 0.05, 10)):
             if Values.Game_properties.score >= score:
                 Values.Cooldowns.PUSH_DOWN = cooldown
                 Values.Game_properties.level = level
@@ -577,6 +594,54 @@ class Game():
         if move_x != 0 and Block.moving_blocks[0].sprite == 0 and repeat:
             Game.out_of_bounds(False)
 
+    def should_die():
+        for block in Block.static_blocks:
+            if block.y == 0:
+                return True
+        return False
+
+    def restart():
+        b_size = Values.Game_properties.BLOCK_SIZE
+        
+        # Play all the music effects and wait
+        Values.Sounds.TETRIS_MUSIC.fadeout(1000)
+        Values.Sounds.DEATH_SOUND.play()
+        time.sleep(3)
+        Values.Sounds.DEATH_MUSIC.play(-1)
+
+        # Display all the elements in the game over screen
+        Game.WINDOW.fill(Colors.BLACK)
+        Game.WINDOW.blit(Gui.GAME_OVER, (b_size*1.5,-b_size))
+        END_SCORE = Fonts.TETRIS_FONT.render(f"Your score: {Values.Game_properties.score}", 1, Colors.WHITE)
+        Game.WINDOW.blit(END_SCORE, (b_size*9 - END_SCORE.get_width()/2, b_size*10))
+        Game.WINDOW.blit(Fonts.GAME_OVER_TEXT, (b_size*9 - Fonts.GAME_OVER_TEXT.get_width()/2, b_size*14))
+        pg.display.update()
+
+        # Create a loop that will wait for player input
+        run = True
+        while run:
+            keys_pressed = pg.key.get_pressed()
+            if keys_pressed[pg.K_r]:
+                run = False
+            
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    Game.run = False
+                    run = False
+
+        # Play the music effects
+        Values.Sounds.DEATH_MUSIC.fadeout(1000)
+        time.sleep(1)
+        Values.Sounds.MENU_MUSIC.play(-1)
+
+        # Reset the game
+        Game.time_flow = False
+        Game.once = True
+        Values.Game_properties.score = 0
+        Block.static_blocks = []
+        Block.moving_blocks = []
+        Block.holded_blocks = []
+        Game.add_new_blocks()
 
 if __name__ == "__main__": # Runs the game if run from the main file
     Game()
