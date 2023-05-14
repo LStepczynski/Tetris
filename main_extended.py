@@ -69,7 +69,7 @@ class Values():
         TITLE = 'Tetris by LSTEP'
         BACKGROUND_COLOR = Colors.BEIGE
         score = 0
-        level = 0
+        level = 0 # Determines how fast the blocks fall
 
 class Fonts():
     """Class that stores all the font related information"""
@@ -77,9 +77,9 @@ class Fonts():
     pg.font.init()
     TETRIS_FONT = pg.font.SysFont('Tetris', Values.Game_properties.BLOCK_SIZE)
     
-    TITLE_SCORE = TETRIS_FONT.render("SCORE", 1, Colors.WHITE)
+    TITLE_SCORE = TETRIS_FONT.render("SCORE", 1, Colors.WHITE) 
 
-    score = TETRIS_FONT.render(str(Values.Game_properties.score), 1, Colors.WHITE)
+    score = TETRIS_FONT.render(str(Values.Game_properties.score), 1, Colors.WHITE) # Displays the score
 
     HOLD = TETRIS_FONT.render('HOLD', 1, Colors.WHITE)
 
@@ -87,8 +87,9 @@ class Fonts():
 
     TITLE_LEVEL = TETRIS_FONT.render('LEVEL', 1, Colors.WHITE)
 
-    level = TETRIS_FONT.render(str(Values.Game_properties.level), 1, Colors.GOLD)
+    level = TETRIS_FONT.render(str(Values.Game_properties.level), 1, Colors.GOLD) # Displays the level
 
+    # List containing all the texts to be displayed in the Game.visuals()
     texts = [(TITLE_SCORE, (b_size/6,b_size*2)), [score, (b_size/6, b_size*3.5)], (HOLD, (b_size/2, b_size*10)), (NEXT, (b_size*14 + b_size/2, b_size*2)), (TITLE_LEVEL, (b_size*14 + b_size/2, b_size*10)), [level, (b_size*15 + b_size*0.75, b_size*12)]]
 
     GAME_OVER_TEXT = TETRIS_FONT.render('PRESS R TO RESET', 1, Colors.WHITE)
@@ -152,8 +153,8 @@ class Block():
     static_blocks = [] #Blocks that already fell
     holded_blocks = [] #Blocks that are being "Holded" by the player and can be swapped with the moving blocks
     next_blocks  =  [] #Blocks that will come up next
-    ghost_blocks =  []
-    blocks_to_delete = []
+    ghost_blocks =  [] #Blocks that show where the blocks will land
+    blocks_to_delete = [] 
   
     def __init__(self, x, y, sprite, index, block_type):
         """The init function that stores all the properties of a block object"""
@@ -184,6 +185,7 @@ class Gui():
     """Contains all the graphical user interface related items"""
     b_size = Values.Game_properties.BLOCK_SIZE
 
+    # Black squares on the sides of the board
     left_square = pg.Rect(0,0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
     right_square = pg.Rect(Values.Game_properties.BLOCK_SIZE * 14 , 0, Values.Game_properties.BLOCK_SIZE*4, Values.Game_properties.HEIGHT)
 
@@ -255,9 +257,10 @@ class Game():
     """Class that contains all the important information and game loop"""
     WINDOW = pg.display.set_mode((Values.Game_properties.WIDTH, Values.Game_properties.HEIGHT))
     pg.display.set_caption(Values.Game_properties.TITLE)
+    
     time_flow = False
-    once = True
-    run = True
+    show_menu = True 
+    run = True # Determines if the game loop is running
 
     def __init__(self):
         """Contains the game loop and initializes items connected with it"""
@@ -274,15 +277,17 @@ class Game():
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     Game.run = False
+
                 if event.type == pg.MOUSEBUTTONDOWN:
-                    if Game.once and self.mouse.colliderect(Gui.BUTTON_HITBOX):
-                        Game.once = False
+                    # If player is in main menu checks if player clicked the start button 
+                    if Game.show_menu and self.mouse.colliderect(Gui.BUTTON_HITBOX):
+                        Game.show_menu = False
                         Game.time_flow = True
                         Values.Sounds.MENU_MUSIC.fadeout(2000)
                         time.sleep(2)
                         Values.Sounds.TETRIS_MUSIC.play(-1, fade_ms=1000)
-                    
-                    if not Game.once and self.mouse.colliderect(Gui.PAUSE_BUTTON):
+                    # Stops the time if player clicked the pause button
+                    if not Game.show_menu and self.mouse.colliderect(Gui.PAUSE_BUTTON):
                         Game.time_flow = not Game.time_flow
 
             if Timer.push_down == -1 and Game.should_fall(Block.moving_blocks): #Pushes the blocks down when the timer reaches -1
@@ -291,7 +296,7 @@ class Game():
                 Fonts.update_text()
                 Timer.push_down = 0
 
-            if not Game.once:
+            if not Game.show_menu:
                 Game.adjust_difficulty()
                 Game.remove_blocks()
                 Game.remove_row()
@@ -299,7 +304,7 @@ class Game():
                 Game.visuals()
                 if Game.time_flow:
                     Game.controls()
-                else: Game.WINDOW.blit(Gui.PAUSE_BUTTON_SPRITE, (Values.Game_properties.BLOCK_SIZE*8, Values.Game_properties.BLOCK_SIZE*9))
+                else: Game.WINDOW.blit(Gui.PAUSE_BUTTON_SPRITE, (Values.Game_properties.BLOCK_SIZE*8, Values.Game_properties.BLOCK_SIZE*9)) 
             else:
                 Game.WINDOW.blit(Gui.MENU, (0,0))
 
@@ -309,7 +314,6 @@ class Game():
                 Game.restart()
             pg.display.update()
             
-
     def visuals():
         """Responsible for drawing all the objects on the screen"""
         Game.WINDOW.fill(Values.Game_properties.BACKGROUND_COLOR)
@@ -387,6 +391,7 @@ class Game():
             Game.swap()
             Timer.swap = 0
         
+        # Hard drops the block 
         if keys_pressed[pg.K_SPACE] and Timer.hard_drop == -1:
             Game.hard_drop()
         
@@ -399,7 +404,8 @@ class Game():
             Timer.swap = -1
             return
 
-        if not Game.should_fall(Block.moving_blocks) and Timer.move_margin == -1:
+        # Starts the timer to leave some time to move the block
+        if not Game.should_fall(Block.moving_blocks) and Timer.move_margin == -1: 
             Timer.move_margin = 0
 
     def remove_row(remove = False):
@@ -539,14 +545,20 @@ class Game():
             Game.add_new_blocks()
 
     def adjust_difficulty():
+        """Changes the speed of the falling blocks depending on the score"""
         for score, cooldown, level in ((0, 0.7, 0), (5000, 0.6, 1), (10000, 0.5, 2), (15000, 0.4, 3), (25000, 0.35, 4), (35000, 0.3, 5), (45000, 0.25, 6), (55000, 0.2, 7), (70000, 0.15, 8), (100000, 0.1, 9), (150000, 0.05, 10)):
             if Values.Game_properties.score >= score:
                 Values.Cooldowns.PUSH_DOWN = cooldown
                 Values.Game_properties.level = level
 
     def place_ghost_blocks():
+        """Places ghost blocks that show where the real blocks will fall"""
+        
+        # Makes a coppy of the falling block
         Block.ghost_blocks = copy.deepcopy(Block.moving_blocks)
         repeat = True
+
+        # Pushes it down untill it falls
         while repeat:
             if not Game.should_fall(Block.ghost_blocks):
                 return
@@ -555,8 +567,10 @@ class Game():
                 block.push_down()
 
     def hard_drop():
+        """Instantly drops the block to the bottom"""
         Values.Sounds.HARD_DROP.play()
         repeat = True
+        # Drops the block to the bottom and increases the score
         while repeat:
             Values.Game_properties.score += 12
             if not Game.should_fall(Block.moving_blocks):
@@ -569,7 +583,9 @@ class Game():
         Game.remove_blocks(True)
         
     def should_fall(container):
+        """Checks if a block should fall (if there is a static block or floor beneath)"""
         should_fall = True
+        # Iterates through the container list and checks for static blocks or bottom of the board
         for block in container:
             if block.y + Values.Game_properties.BLOCK_SIZE == Values.Game_properties.HEIGHT:
                 should_fall = False
@@ -579,28 +595,34 @@ class Game():
         return should_fall
     
     def out_of_bounds(repeat = True):
+        """Prevents the blocks from moving into the side of the map while rotating"""
         b_size = Values.Game_properties.BLOCK_SIZE
         move_x = 0
 
+        # Checks if a block is out of bounds
         for block in Block.moving_blocks:
             if block.x < b_size*4:
                 move_x = b_size
             if block.x > b_size*13:
                 move_x = -b_size
         
+        # Moves the block
         for block in Block.moving_blocks:
             block.x += move_x
 
+        # Moves it again if still out of bounds
         if move_x != 0 and Block.moving_blocks[0].sprite == 0 and repeat:
             Game.out_of_bounds(False)
 
     def should_die():
+        """Checks if the player lost"""
         for block in Block.static_blocks:
             if block.y == 0:
                 return True
         return False
 
     def restart():
+        """Restarts the game after the player has lost"""
         b_size = Values.Game_properties.BLOCK_SIZE
         
         # Play all the music effects and wait
@@ -636,7 +658,7 @@ class Game():
 
         # Reset the game
         Game.time_flow = False
-        Game.once = True
+        Game.show_menu = True
         Values.Game_properties.score = 0
         Block.static_blocks = []
         Block.moving_blocks = []
