@@ -1,2 +1,2 @@
 # Tetris
-My recreation of the game named Tetris in pygame
+Documentation of my journey of replicationg Tetris in python usng pygame.
